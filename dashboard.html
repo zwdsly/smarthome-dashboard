@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartHome 控制中心</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #f5f5f7;
+            --card-bg: rgba(255, 255, 255, 0.86);
+            --text-main: #1d1d1f;
+            --text-sub: #6e6e73;
+            --text-light: #86868b;
+            --blue: #007aff;
+            --green: #34c759;
+            --red: #ff3b30;
+            --border: rgba(0, 0, 0, 0.08);
+            --shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+            --small-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+                         "Microsoft YaHei", Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(0, 122, 255, 0.12), transparent 32%),
+                radial-gradient(circle at top right, rgba(52, 199, 89, 0.10), transparent 28%),
+                var(--bg);
+            color: var(--text-main);
+        }
+
+        .page {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 28px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .title-block h1 {
+            margin: 0;
+            font-size: 36px;
+            font-weight: 760;
+            letter-spacing: -1px;
+        }
+
+        .title-block p {
+            margin: 9px 0 0;
+            font-size: 15px;
+            color: var(--text-sub);
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--border);
+            box-shadow: var(--small-shadow);
+            font-size: 15px;
+            color: var(--text-sub);
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 0 5px rgba(52, 199, 89, 0.14);
+        }
+
+        .status-text {
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .top-btn {
+            border: none;
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: #1d1d1f;
+            color: white;
+            font-size: 14px;
+            font-weight: 650;
+            cursor: pointer;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        .top-btn.secondary {
+            background: rgba(255, 255, 255, 0.82);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            box-shadow: var(--small-shadow);
+        }
+
+        .top-btn.blue {
+            background: var(--blue);
+            color: white;
+        }
+
+        .top-btn:active {
+            transform: scale(0.96);
+            opacity: 0.85;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            position: relative;
+            min-height: 230px;
+            padding: 22px;
+            border-radius: 30px;
+            background: var(--card-bg);
+            backdrop-filter: blur(22px);
+            border: 1px solid rgba(255, 255, 255, 0.74);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 24px 56px rgba(0, 0, 0, 0.10);
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            right: -38px;
+            top: -38px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(0, 122, 255, 0.08);
+        }
+
+        .card.settable::after {
+            background: rgba(52, 199, 89, 0.11);
+        }
+
+        .card-header {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .name {
+            font-size: 17px;
+            font-weight: 650;
+            color: var(--text-main);
+        }
+
+        .tag {
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--blue);
+            background: rgba(0, 122, 255, 0.10);
+            white-space: nowrap;
+        }
+
+        .tag.readonly {
+            color: var(--text-light);
+            background: rgba(142, 142, 147, 0.12);
+        }
+
+        .value-row {
+            position: relative;
+            z-index: 1;
+            margin-top: 26px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .value {
+            font-size: 48px;
+            line-height: 0.95;
+            font-weight: 760;
+            letter-spacing: -1.8px;
+            color: var(--blue);
+        }
+
+        .value.on {
+            color: var(--green);
+        }
+
+        .value.off {
+            color: var(--text-light);
+        }
+
+        .unit {
+            padding-bottom: 5px;
+            font-size: 16px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .meta {
+            position: relative;
+            z-index: 1;
+            margin-top: 20px;
+        }
+
+        .identifier {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .time {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .control-row {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .set-input {
+            width: 100%;
+            min-width: 0;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            outline: none;
+            background: rgba(255, 255, 255, 0.78);
+            color: var(--text-main);
+            font-size: 16px;
+            transition: border 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .set-input:focus {
+            border-color: rgba(0, 122, 255, 0.7);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+        }
+
+        .set-btn {
+            border: none;
+            padding: 0 17px;
+            border-radius: 16px;
+            background: var(--blue);
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        .set-btn:active {
+            transform: scale(0.94);
+            opacity: 0.86;
+        }
+
+        .switch-row {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.58);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .switch-label {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .switch-state {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .switch-state.on-text {
+            color: var(--green);
+        }
+
+        .switch-state.off-text {
+            color: var(--text-light);
+        }
+
+        .ios-switch {
+            position: relative;
+            width: 62px;
+            height: 34px;
+            border: none;
+            border-radius: 999px;
+            background: #d1d1d6;
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.22s ease, box-shadow 0.22s ease;
+        }
+
+        .ios-switch.active {
+            background: var(--blue);
+            box-shadow: 0 8px 18px rgba(0, 122, 255, 0.28);
+        }
+
+        .switch-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+            transition: transform 0.22s ease, width 0.16s ease;
+        }
+
+        .ios-switch.active .switch-knob {
+            transform: translateX(28px);
+        }
+
+        .ios-switch:active .switch-knob {
+            width: 31px;
+        }
+
+        .empty {
+            grid-column: 1 / -1;
+            padding: 30px;
+            text-align: center;
+            color: var(--text-sub);
+            background: var(--card-bg);
+            border-radius: 28px;
+            box-shadow: var(--small-shadow);
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.24);
+            backdrop-filter: blur(18px);
+        }
+
+        .modal-mask.show {
+            display: flex;
+        }
+
+        .manage-modal {
+            width: min(620px, 100%);
+            max-height: 86vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.76);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 24px 26px 16px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 750;
+            letter-spacing: -0.5px;
+        }
+
+        .modal-desc {
+            margin: 7px 0 0;
+            color: var(--text-sub);
+            font-size: 14px;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(142, 142, 147, 0.13);
+            color: var(--text-sub);
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .manage-list {
+            padding: 8px 20px 18px;
+            overflow: auto;
+        }
+
+        .manage-item {
+            display: grid;
+            grid-template-columns: 34px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 14px;
+            margin-bottom: 10px;
+            border-radius: 20px;
+            background: rgba(245, 245, 247, 0.82);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.16s ease, background 0.16s ease;
+        }
+
+        .manage-item.dragging {
+            opacity: 0.55;
+            transform: scale(0.98);
+        }
+
+        .drag-handle {
+            width: 30px;
+            height: 30px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            background: rgba(255, 255, 255, 0.7);
+            cursor: grab;
+            font-size: 18px;
+            user-select: none;
+        }
+
+        .manage-name {
+            font-size: 16px;
+            font-weight: 650;
+        }
+
+        .manage-id {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .visibility-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-sub);
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .visibility-switch input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--blue);
+        }
+
+        .modal-footer {
+            padding: 16px 20px 22px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .footer-left,
+        .footer-right {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            border: none;
+            padding: 11px 16px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .modal-btn.primary {
+            background: var(--blue);
+            color: white;
+        }
+
+        .modal-btn.dark {
+            background: #1d1d1f;
+            color: white;
+        }
+
+        .modal-btn.light {
+            background: rgba(142, 142, 147, 0.13);
+            color: var(--text-main);
+        }
+
+        @media (max-width: 768px) {
+            .page {
+                padding: 22px 18px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 18px;
+            }
+
+            .title-block h1 {
+                font-size: 30px;
+            }
+
+            .top-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .value {
+                font-size: 44px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top-actions {
+                gap: 10px;
+            }
+
+            .top-btn {
+                padding: 11px 15px;
+            }
+
+            .status-pill {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                min-height: 220px;
+            }
+
+            .control-row {
+                flex-direction: column;
+            }
+
+            .set-btn {
+                height: 44px;
+            }
+
+            .manage-item {
+                grid-template-columns: 30px 1fr;
+            }
+
+            .visibility-switch {
+                grid-column: 2 / 3;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <section class="topbar">
+            <div class="title-block">
+                <h1>SmartHome</h1>
+                <p>家庭环境监测与设备控制中心</p>
+            </div>
+
+            <div class="top-actions">
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    <span>运行状态：</span>
+                    <span class="status-text" id="state">加载中</span>
+                </div>
+
+                <button class="top-btn blue" onclick="openManageModal()">管理面板</button>
+                <button class="top-btn" onclick="loadData()">刷新页面数据</button>
+                <button class="top-btn secondary" onclick="refreshBackend()">立即重新抓取</button>
+            </div>
+        </section>
+
+        <section class="grid" id="dataGrid"></section>
+    </main>
+
+    <div class="modal-mask" id="manageMask">
+        <div class="manage-modal">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title">管理面板</h2>
+                    <p class="modal-desc">拖拽调整显示顺序，取消勾选即可隐藏对应卡片。</p>
+                </div>
+                <button class="modal-close" onclick="closeManageModal()">×</button>
+            </div>
+
+            <div class="manage-list" id="manageList"></div>
+
+            <div class="modal-footer">
+                <div class="footer-left">
+                    <button class="modal-btn light" onclick="showAllPanels()">全部显示</button>
+                    <button class="modal-btn light" onclick="resetPanelConfig()">恢复默认</button>
+                </div>
+
+                <div class="footer-right">
+                    <button class="modal-btn light" onclick="closeManageModal()">取消</button>
+                    <button class="modal-btn primary" onclick="savePanelConfigFromModal()">保存设置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "/api/home/simple";
+        const SET_URL = "/api/home/set";
+        const REFRESH_URL = "/api/home/refresh";
+        const CONFIG_KEY = "smarthome_panel_config_v1";
+
+        let latestList = [];
+        let panelConfig = loadPanelConfig();
+
+        let manageOrder = [];
+        let manageHidden = new Set();
+        let draggedIdentifier = null;
+
+        function loadPanelConfig() {
+            try {
+                const raw = localStorage.getItem(CONFIG_KEY);
+                if (!raw) {
+                    return {
+                        order: [],
+                        hidden: []
+                    };
+                }
+
+                const config = JSON.parse(raw);
+
+                return {
+                    order: Array.isArray(config.order) ? config.order : [],
+                    hidden: Array.isArray(config.hidden) ? config.hidden : []
+                };
+            } catch (err) {
+                return {
+                    order: [],
+                    hidden: []
+                };
+            }
+        }
+
+        function savePanelConfig(config) {
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+            panelConfig = config;
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function showMessage(text, isError = false) {
+            if (isError && text) {
+                alert(text);
+            }
+            console.log(text || "");
+        }
+
+        function applyPanelConfig(list) {
+            const data = Array.isArray(list) ? [...list] : [];
+            const map = new Map(data.map(item => [item.identifier, item]));
+            const used = new Set();
+
+            const ordered = [];
+
+            panelConfig.order.forEach(identifier => {
+                if (map.has(identifier)) {
+                    ordered.push(map.get(identifier));
+                    used.add(identifier);
+                }
+            });
+
+            data.forEach(item => {
+                if (!used.has(item.identifier)) {
+                    ordered.push(item);
+                }
+            });
+
+            const hidden = new Set(panelConfig.hidden || []);
+
+            return ordered.filter(item => !hidden.has(item.identifier));
+        }
+
+        function getManageItems() {
+            const data = Array.isArray(latestList) ? [...latestList] : [];
+            const map = new Map(data.map(item => [item.identifier, item]));
+            const used = new Set();
+
+            const ordered = [];
+
+            panelConfig.order.forEach(identifier => {
+                if (map.has(identifier)) {
+                    ordered.push(map.get(identifier));
+                    used.add(identifier);
+                }
+            });
+
+            data.forEach(item => {
+                if (!used.has(item.identifier)) {
+                    ordered.push(item);
+                }
+            });
+
+            return ordered;
+        }
+
+        function openManageModal() {
+            if (!latestList || latestList.length === 0) {
+                showMessage("当前没有可管理的数据面板", true);
+                return;
+            }
+
+            const items = getManageItems();
+
+            manageOrder = items.map(item => item.identifier);
+            manageHidden = new Set(panelConfig.hidden || []);
+
+            renderManageList();
+
+            document.getElementById("manageMask").classList.add("show");
+        }
+
+        function closeManageModal() {
+            document.getElementById("manageMask").classList.remove("show");
+        }
+
+        function renderManageList() {
+            const container = document.getElementById("manageList");
+            const map = new Map(latestList.map(item => [item.identifier, item]));
+
+            container.innerHTML = "";
+
+            manageOrder.forEach(identifier => {
+                const item = map.get(identifier);
+
+                if (!item) {
+                    return;
+                }
+
+                const visible = !manageHidden.has(identifier);
+
+                const row = document.createElement("div");
+                row.className = "manage-item";
+                row.draggable = true;
+                row.dataset.identifier = identifier;
+
+                row.innerHTML = `
+                    <div class="drag-handle">☰</div>
+
+                    <div>
+                        <div class="manage-name">${escapeHTML(item.name || "")}</div>
+                        <div class="manage-id">${escapeHTML(item.identifier || "")}</div>
+                    </div>
+
+                    <label class="visibility-switch">
+                        <input
+                            type="checkbox"
+                            ${visible ? "checked" : ""}
+                            onchange="toggleManageVisible('${identifier}', this.checked)"
+                        >
+                        显示
+                    </label>
+                `;
+
+                row.addEventListener("dragstart", handleDragStart);
+                row.addEventListener("dragover", handleDragOver);
+                row.addEventListener("drop", handleDrop);
+                row.addEventListener("dragend", handleDragEnd);
+
+                container.appendChild(row);
+            });
+        }
+
+        function handleDragStart(event) {
+            draggedIdentifier = event.currentTarget.dataset.identifier;
+            event.currentTarget.classList.add("dragging");
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+
+            const targetIdentifier = event.currentTarget.dataset.identifier;
+
+            if (!draggedIdentifier || draggedIdentifier === targetIdentifier) {
+                return;
+            }
+
+            const fromIndex = manageOrder.indexOf(draggedIdentifier);
+            const toIndex = manageOrder.indexOf(targetIdentifier);
+
+            if (fromIndex < 0 || toIndex < 0) {
+                return;
+            }
+
+            manageOrder.splice(fromIndex, 1);
+            manageOrder.splice(toIndex, 0, draggedIdentifier);
+
+            renderManageList();
+        }
+
+        function handleDragEnd(event) {
+            event.currentTarget.classList.remove("dragging");
+            draggedIdentifier = null;
+        }
+
+        function toggleManageVisible(identifier, checked) {
+            if (checked) {
+                manageHidden.delete(identifier);
+            } else {
+                manageHidden.add(identifier);
+            }
+        }
+
+        function showAllPanels() {
+            manageHidden.clear();
+            renderManageList();
+        }
+
+        function resetPanelConfig() {
+            localStorage.removeItem(CONFIG_KEY);
+
+            panelConfig = {
+                order: [],
+                hidden: []
+            };
+
+            manageOrder = latestList.map(item => item.identifier);
+            manageHidden = new Set();
+
+            renderManageList();
+            renderCards(applyPanelConfig(latestList));
+        }
+
+        function savePanelConfigFromModal() {
+            const config = {
+                order: manageOrder,
+                hidden: Array.from(manageHidden)
+            };
+
+            savePanelConfig(config);
+            renderCards(applyPanelConfig(latestList));
+            closeManageModal();
+        }
+
+        function getValueClass(value) {
+            if (value === "ON" || value === true || value === "true") {
+                return "on";
+            }
+
+            if (value === "OFF" || value === false || value === "false") {
+                return "off";
+            }
+
+            return "";
+        }
+
+        function isOnValue(value) {
+            return value === "ON" || value === true || value === "true" || value === 1 || value === "1";
+        }
+
+        function renderControl(item) {
+            if (!item.can_set) {
+                return "";
+            }
+
+            if (item.field_type === "boolean") {
+                const isOn = isOnValue(item.value);
+                const nextValue = isOn ? false : true;
+                const stateText = isOn ? "ON" : "OFF";
+                const switchClass = isOn ? "ios-switch active" : "ios-switch";
+                const stateClass = isOn ? "switch-state on-text" : "switch-state off-text";
+
+                return `
+                    <div class="switch-row">
+                        <div>
+                            <div class="switch-label">当前状态</div>
+                            <div class="${stateClass}">${stateText}</div>
+                        </div>
+
+                        <button class="${switchClass}" onclick="setValue('${item.identifier}', ${nextValue})">
+                            <span class="switch-knob"></span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="control-row">
+                    <input
+                        class="set-input"
+                        id="input-${item.identifier}"
+                        type="number"
+                        value="${escapeHTML(item.value ?? "")}"
+                        placeholder="输入新值"
+                    >
+                    <button class="set-btn" onclick="setNumberValue('${item.identifier}')">
+                        下发
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderCards(list) {
+            const grid = document.getElementById("dataGrid");
+            grid.innerHTML = "";
+
+            if (!list || list.length === 0) {
+                grid.innerHTML = `<div class="empty">暂无显示面板，可点击右上角“管理面板”恢复显示。</div>`;
+                return;
+            }
+
+            list.forEach(item => {
+                const card = document.createElement("div");
+                card.className = item.can_set ? "card settable" : "card";
+
+                const valueClass = getValueClass(item.value);
+                const tagText = item.can_set ? "可下发" : "只读";
+                const tagClass = item.can_set ? "tag" : "tag readonly";
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="name">${escapeHTML(item.name || "")}</div>
+                        <div class="${tagClass}">${tagText}</div>
+                    </div>
+
+                    <div class="value-row">
+                        <div class="value ${valueClass}">
+                            ${escapeHTML(item.value ?? "--")}
+                        </div>
+                        <div class="unit">${escapeHTML(item.unit || "")}</div>
+                    </div>
+
+                    <div class="meta">
+                        <div class="identifier">${escapeHTML(item.identifier || "")}</div>
+                        <div class="time">${escapeHTML(item.update_time || "")}</div>
+                    </div>
+
+                    ${renderControl(item)}
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        async function setNumberValue(identifier) {
+            const input = document.getElementById(`input-${identifier}`);
+            const value = input.value.trim();
+
+            if (!value) {
+                showMessage("请输入要下发的数值", true);
+                return;
+            }
+
+            await setValue(identifier, value);
+        }
+
+        async function setValue(identifier, value) {
+            try {
+                console.log(`正在下发 ${identifier} ...`);
+
+                const response = await fetch(SET_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        identifier: identifier,
+                        value: value
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log(`下发成功：${identifier} = ${result.value}`);
+                    await loadData();
+                } else {
+                    showMessage("下发失败：" + (result.error || result.message || "未知错误"), true);
+                    console.log(result);
+                }
+            } catch (err) {
+                showMessage("请求失败：" + err.message, true);
+            }
+        }
+
+        async function refreshBackend() {
+            try {
+                console.log("正在重新抓取 ThingsCloud 数据...");
+
+                const response = await fetch(REFRESH_URL, {
+                    method: "GET",
+                    cache: "no-store"
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log("重新抓取成功");
+                    await loadData();
+                } else {
+                    showMessage("重新抓取失败：" + (result.error || result.message || "未知错误"), true);
+                }
+            } catch (err) {
+                showMessage("重新抓取请求失败：" + err.message, true);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: "GET",
+                    cache: "no-store"
+                });
+
+                const result = await response.json();
+
+                const stateEl = document.getElementById("state");
+
+                if (result.success) {
+                    stateEl.innerText = "正常";
+                    stateEl.style.color = "var(--green)";
+                } else {
+                    stateEl.innerText = "异常";
+                    stateEl.style.color = "var(--red)";
+                }
+
+                if (result.error) {
+                    console.warn("后端错误：", result.error);
+                }
+
+                if (result.success && Array.isArray(result.data)) {
+                    latestList = result.data;
+                    renderCards(applyPanelConfig(latestList));
+                }
+            } catch (err) {
+                const stateEl = document.getElementById("state");
+                stateEl.innerText = "请求失败";
+                stateEl.style.color = "var(--red)";
+                console.error(err);
+            }
+        }
+
+        document.getElementById("manageMask").addEventListener("click", function (event) {
+            if (event.target === this) {
+                closeManageModal();
+            }
+        });
+
+        loadData();
+
+        setInterval(loadData, 10000);
+    </script>
+</body>
+</html>
